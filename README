@@ -1,0 +1,8 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=218
+
+This is an indent file for LaTeX.
+
+It emulates Emacs' way of indenting item-environments, i.e., continuation lines of '\item', '\item[]', and '\bibitem' will be indented separately.
+
+NOTE: I searched for an indent file for TeX and didn't found one -- so I wrote this script. Right now I've noticed that Johannes Zellner has already created an indent file for TeX (you can find his version at http://www.zellner.org/vim/indent/tex.vim). I think that's the official version.
+Nevertheless, since his version doesn't indent \items the way I want them to be, I decided to release my version, too. Try both of them, use the one you like most.
