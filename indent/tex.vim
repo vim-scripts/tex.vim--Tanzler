@@ -1,16 +1,17 @@
 " Vim indent file
 " Language:     LaTeX
-" Maintainer:   Johannes Tanzler <jtanzler@yline.com>
+" Maintainer:   Johannes Tanzler <johannes.tanzler@aon.at>
 " Created:      Sat, 16 Feb 2002 16:50:19 +0100
-" Last Change:	Sun, 17 Feb 2002 00:09:11 +0100
+" Last Change:	Mit, 15 Jun 2005 01:04:35 +0200
 " Last Update:  18th feb 2002, by LH :
 "               (*) better support for the option
 "               (*) use some regex instead of several '||'.
-" Version: 0.02
-" URL: comming soon: http://www.unet.univie.ac.at/~a9925098/vim/indent/tex.vim
-
-" --> If you're a Vim guru & and you find something that could be done in a
-"     better (perhaps in a more Vim-ish or Vi-ish) way, please let me know! 
+"               Oct 9th, 2003, by JT:
+"               (*) don't change indentation of lines starting with '%'
+"               2005/06/15, Moshe Kaminsky <kaminsky@math.huji.ac.il>
+"               (*) New variables:
+"                   g:tex_items, g:tex_itemize_env, g:tex_noindent_env
+" Version: 0.4
 
 " Options: {{{
 "
@@ -38,26 +39,54 @@
 "       \end{itemize}                        \end{itemize}    
 "
 "
-"   This option applies to itemize, description, enumerate, and
-"   thebibliography.
+" * g:tex_items
+"
+"   A list of tokens to be considered as commands for the beginning of an item 
+"   command. The tokens should be separated with '\|'. The initial '\' should 
+"   be escaped. The default is '\\bibitem\|\\item'.
+"
+" * g:tex_itemize_env
+" 
+"   A list of environment names, separated with '\|', where the items (item 
+"   commands matching g:tex_items) may appear. The default is 
+"   'itemize\|description\|enumerate\|thebibliography'.
+"
+" * g:tex_noindent_env
+"
+"   A list of environment names. separated with '\|', where no indentation is 
+"   required. The default is 'document\|verbatim'.
 "
 " }}} 
-
-" Delete the next line to avoid the special indention of items
-if !exists("g:tex_indent_items")
-  let g:tex_indent_items = 1
-endif
 
 if exists("b:did_indent") | finish
 endif
 let b:did_indent = 1
 
+" Delete the next line to avoid the special indention of items
+if !exists("g:tex_indent_items")
+  let g:tex_indent_items = 1
+endif
+if g:tex_indent_items
+  if !exists("g:tex_itemize_env")
+    let g:tex_itemize_env = 'itemize\|description\|enumerate\|thebibliography'
+  endif
+  if !exists('g:tex_items')
+    let g:tex_items = '\\bibitem\|\\item' 
+  endif
+else
+  let g:tex_items = ''
+endif
+
+if !exists("g:tex_noindent_env")
+  let g:tex_noindent_env = 'document\|verbatim'
+endif
 
 setlocal indentexpr=GetTeXIndent()
 setlocal nolisp
 setlocal nosmartindent
 setlocal autoindent
-setlocal indentkeys+==\\end,=\\item,=\\bibitem
+exec 'setlocal indentkeys+=}' . substitute(g:tex_items, '^\|\(\\|\)', ',=', 'g')
+let g:tex_items = '^\s*' . g:tex_items
 
 
 " Only define the function once
@@ -84,14 +113,13 @@ function GetTeXIndent()
   " Don't add it for \begin{document} and \begin{verbatim}
   ""if line =~ '^\s*\\begin{\(.*\)}'  && line !~ 'verbatim' 
   " LH modification : \begin does not always start a line
-  if line =~ '\\begin{\(.*\)}'  && line !~ 'verbatim' 
-        \ && line !~ 'document'
+  if line =~ '\\begin{.*}'  && line !~ g:tex_noindent_env
 
     let ind = ind + &sw
 
-    if g:tex_indent_items == 1
+    if g:tex_indent_items
       " Add another sw for item-environments
-      if line =~ 'itemize\|description\|enumerate\|thebibliography'
+      if line =~ g:tex_itemize_env
         let ind = ind + &sw
       endif
     endif
@@ -99,12 +127,11 @@ function GetTeXIndent()
 
   
   " Subtract a 'shiftwidth' when an environment ends
-  if cline =~ '^\s*\\end' && cline !~ 'verbatim' 
-        \&& cline !~ 'document'
+  if cline =~ '^\s*\\end' && cline !~ g:tex_noindent_env
 
-    if g:tex_indent_items == 1
+    if g:tex_indent_items
       " Remove another sw for item-environments
-      if cline =~ 'itemize\|description\|enumerate\|thebibliography'
+      if cline =~ g:tex_itemize_env
         let ind = ind - &sw
       endif
     endif
@@ -116,15 +143,15 @@ function GetTeXIndent()
   " Special treatment for 'item'
   " ----------------------------
   
-  if g:tex_indent_items == 1
+  if g:tex_indent_items
 
     " '\item' or '\bibitem' itself:
-    if cline =~ '^\s*\\\(bib\)\=item' 
+    if cline =~ g:tex_items
       let ind = ind - &sw
     endif
 
     " lines following to '\item' are intented once again:
-    if line =~ '^\s*\\\(bib\)\=item' 
+    if line =~ g:tex_items
       let ind = ind + &sw
     endif
 
